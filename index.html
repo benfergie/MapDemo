@@ -38,9 +38,9 @@
                     + '<a href="http://creativecommons.org/licenses/by-sa/2.0/" target="_blank">CC-BY-SA</a>';
 
         //create a mobile popup
-        //popup = new esri.dijit.PopupMobile(null, dojo.create("div"));
+        popup = new esri.dijit.PopupMobile(null, dojo.create("div"));
 
-        popup = new esri.dijit.Popup(null, dojo.create("div"));
+        //popup = new esri.dijit.Popup(null, dojo.create("div"));
 
         dojo.byId('osmCopy').innerHTML = copyrightText;
         var extent = new esri.geometry.Extent({"xmin":-11680895.18963141,"ymin":4838736.197363664,"xmax":-11677551.069643844,"ymax":4841124.8544976385,"spatialReference":{"wkid":102100}});
