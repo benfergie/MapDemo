@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=7,IE=9" />
+    <!--The viewport meta tag is used to improve the presentation and behavior of the samples 
+      on iOS devices-->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
+    <title>Mobile Popup</title>
+    <link rel="stylesheet" type="text/css" href="http://serverapi.arcgisonline.com/jsapi/arcgis/3.0/js/esri/dijit/css/PopupMobile.css">
+    <link rel="stylesheet" type="text/css" href="http://serverapi.arcgisonline.com/jsapi/arcgis/3.0/js/esri/dijit/css/Popup.css"/> 
+   
+    <style>
+      html, body { height: 100%; width: 100%; margin: 0; padding: 0; }
+      .esriScalebar{
+        padding: 20px 20px;
+      }
+      #map{
+        padding:0;
+      }
+    </style>
+    <script type="text/javascript">var djConfig = {parseOnLoad: true};</script>
+    <script type="text/javascript" src="http://serverapi.arcgisonline.com/jsapi/arcgis/?v=3.0"></script>
+    <script type="text/javascript">
+      dojo.require("dijit.layout.BorderContainer");
+      dojo.require("dijit.layout.ContentPane");
+      dojo.require("esri.map");
+      dojo.require("esri.layers.osm");
+      dojo.require("esri.arcgis.utils");
+      dojo.require("esri.dijit.PopupMobile");
+      
+      var map,popup, osmLayer;
+      var identifyTask,identifyParams;
+      
+      function init() {
+        //setup the copyright text http://www.openstreetmap.org/copyright
+        var copyrightText= '&#169; <a href="http://www.openstreetmap.org/" target="_blank">OpenStreetMap</a> contributors, '
+                    + '<a href="http://creativecommons.org/licenses/by-sa/2.0/" target="_blank">CC-BY-SA</a>';
+
+        //create a mobile popup
+        //popup = new esri.dijit.PopupMobile(null, dojo.create("div"));
+
+        popup = new esri.dijit.Popup(null, dojo.create("div"));
+
+        dojo.byId('osmCopy').innerHTML = copyrightText;
+        var extent = new esri.geometry.Extent({"xmin":-11680895.18963141,"ymin":4838736.197363664,"xmax":-11677551.069643844,"ymax":4841124.8544976385,"spatialReference":{"wkid":102100}});
+        map = new esri.Map("map",{infoWindow:popup,extent:extent,logo:false});
+        
+        dojo.connect(map,"onLoad",mapReady);
+        //For featureLayers
+        //dojo.connect(map,"onLoad",addPoint);
+        
+        osmLayer = new esri.layers.OpenStreetMapLayer();
+        map.addLayer(osmLayer);
+        
+        var hydrantLayer = new esri.layers.ArcGISDynamicMapServiceLayer("http://arc.fjagis.net/ArcGIS/rest/services/C3GIS/Hydrants/MapServer");
+        map.addLayer(hydrantLayer);
+
+     
+      }
+      
+      function mapReady(map){
+
+       dojo.connect(map,"onClick",executeIdentifyTask);
+       
+       //create identify tasks and setup parameters 
+       identifyTask = new esri.tasks.IdentifyTask("http://arc.fjagis.net/ArcGIS/rest/services/C3GIS/Hydrants/MapServer");
+       
+       identifyParams = new esri.tasks.IdentifyParameters();
+       identifyParams.tolerance = 5;
+       identifyParams.returnGeometry = true;
+       identifyParams.layerIds = [0];
+       identifyParams.layerOption = esri.tasks.IdentifyParameters.LAYER_OPTION_ALL;
+       identifyParams.width  = map.width;
+       identifyParams.height = map.height;
+       
+       
+       //resize the map when the browser resizes
+       dojo.connect(dijit.byId('map'), 'resize', map,map.resize);
+  
+      }
+      
+
+      function executeIdentifyTask(evt) {
+        identifyParams.geometry = evt.mapPoint;
+        identifyParams.mapExtent = map.extent;
+       
+        var deferred = identifyTask.execute(identifyParams);
+
+        deferred.addCallback(function(response) {     
+          // response is an array of identify result objects    
+          // Let's return an array of features.
+          return dojo.map(response, function(result) {
+            var feature = result.feature;
+            feature.attributes.layerName = result.layerName;
+            if(result.layerName === 'Hydrants'){
+              console.log(feature.attributes.ID);
+              var template = new esri.InfoTemplate("Hydrant ID: ${ID}", "Hydrant ID: ${ID} <br/> Label: ${Label} <br/> Flow: ${Flow} <br/> Maintenance: ${Maintenance}");
+              feature.setInfoTemplate(template);
+            }
+            return feature;
+          });
+        });
+
+      
+        // InfoWindow expects an array of features from each deferred
+        // object that you pass. If the response from the task execution 
+        // above is not an array of features, then you need to add a callback
+        // like the one above to post-process the response and return an
+        // array of features.
+        map.infoWindow.setFeatures([ deferred ]);
+        map.infoWindow.show(evt.mapPoint);
+      }
+       
+
+
+      dojo.addOnLoad(init);
+    </script>
+  </head>
+  
+  <body>
+    <div dojotype="dijit.layout.BorderContainer" design="headline" gutters="false" style="width: 100%; height: 100%; margin: 0;">
+      <div id="map" dojotype="dijit.layout.ContentPane" region="center" style="border:1px solid #000;padding:0;">
+         <div id="osmCopy" style="position:absolute; color:black;font-weight:bold;right:10px; bottom:10px; z-Index:999;"></div>
+     </div>
+    </div>
+    <div id="info" style="padding:5px; margin:5px; background-color:#eee;"></div> 
+  </body>
+
+</html>
