@@ -37,6 +37,12 @@
         var copyrightText= '&#169; <a href="http://www.openstreetmap.org/" target="_blank">OpenStreetMap</a> contributors, '
                     + '<a href="http://creativecommons.org/licenses/by-sa/2.0/" target="_blank">CC-BY-SA</a>';
 
+        var supportsOrientationChange = "onorientationchange" in window, orientationEvent = supportsOrientationChange ? "orientationchange" : "resize";
+
+        window.addEventListener(orientationEvent, function() {
+            orientationChanged();
+        }, false);            
+                    
         //create a mobile popup
         popup = new esri.dijit.PopupMobile(null, dojo.create("div"));
 
@@ -102,6 +108,13 @@
           });
         });
 
+        function orientationChanged() {
+            console.log("Orientation changed: " + window.orientation);
+            if(map) {
+                map.reposition();
+                map.resize();
+            }
+        }
       
         // InfoWindow expects an array of features from each deferred
         // object that you pass. If the response from the task execution 
